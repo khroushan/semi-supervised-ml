@@ -18,6 +18,8 @@ class SemiSupervisedData():
                        x_cols: list,
                        y_col: str):
         """ If the data given in pd.DataFrame form """
+        if not isinstance(y_col, str):
+            raise Exception("The name of y column must be a string!")
         return cls(df[x_cols].values, df[y_col].values)
 
     @staticmethod
@@ -51,9 +53,8 @@ class SemiSupervisedData():
         points """
         x, y, y_mask = self.shuffle([self.x, self.y, self.y_mask])
         mask_indx = (y_mask == -1)
-        x_u, y_u, y_u_mask = x[mask_indx], y[mask_indx], y_mask[mask_indx]
-        x_l, y_l, y_l_mask = x[~mask_indx], y[~mask_indx], y_mask[~mask_indx]
-
+        x_u, y_u, y_u_mask = x[mask_indx, :], y[mask_indx], y_mask[mask_indx]
+        x_l, y_l, y_l_mask = x[~mask_indx, :], y[~mask_indx], y_mask[~mask_indx]
         u_num = int(y_u.shape[0]*u_frac)
         l_num = int(y_l.shape[0]*l_frac)
 
@@ -61,6 +62,8 @@ class SemiSupervisedData():
         x_u_s, y_u_s, y_u_mask_s = x_u[:u_num], y_u[:u_num], y_u_mask[:u_num]
         x_l_s, y_l_s, y_l_mask_s = x_l[:l_num], y_l[:l_num], y_l_mask[:l_num]
 
-        return sparse.vstack([x_u_s, x_l_s]),\
-            np.r_[y_u_s, y_l_s],\
-            np.r_[y_u_mask_s, y_l_mask_s]
+        # concatenate samples
+        x_s = sparse.vstack([x_u_s, x_l_s]).tocsr()
+        y_s = np.r_[y_u_s, y_l_s]
+        y_mask_s = np.r_[y_u_mask_s, y_l_mask_s]
+        return x_s, y_s, y_mask_s
